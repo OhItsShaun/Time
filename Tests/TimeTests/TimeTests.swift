@@ -77,6 +77,7 @@ class TimeTests: XCTestCase {
             ("testStaticTime", testStaticTime),
             ("testEquality", testEquality),
             ("testComparable", testComparable),
+            ("testArithmetic", testArithmetic),
             ("testSunset", testSunset),
         ]
     }

@@ -64,7 +64,13 @@ public struct Time: TimeGenerator {
 
 extension Time {
     
-    public static func +(lhs: Time, rhs: Time) -> Time {
+    /// Add two `Time`s.
+    ///
+    /// - Parameters:
+    ///   - lhs: A value to add.
+    ///   - rhs: A value to add.
+    /// - Returns: The time value produced when `lhs` is added to `rhs`.
+    public static func +(_ lhs: Time, _ rhs: Time) -> Time {
         let minute = lhs.minute &+ rhs.minute               // Since our precondition of minute is 0-59, we can uncheck overflow.
         let overflow = minute % 60
         let carry = minute / 60
@@ -78,6 +84,12 @@ extension Time {
     }
     
     
+    /// Substract two `Time`s.
+    ///
+    /// - Parameters:
+    ///   - lhs: A value to subtract.
+    ///   - rhs: The value to subtract.
+    /// - Returns: The time value produced when `rhs` is subtracted from `lhs`.
     public static func -(lhs: Time, rhs: Time) -> Time {
         var hour = Int8(lhs.hour) &- Int8(rhs.hour)
         var minute = Int8(lhs.minute) &- Int8(rhs.minute)

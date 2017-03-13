@@ -23,32 +23,24 @@ final public class AstronomicalTime: TimeGenerator {
     
     /// Our internal representation of `hour`.
     /// Initially `nil` awaiting for fulfillment from network request or fallback value from error.
-    private var _hour: UInt8? = nil
+    private var _hour: UInt8
     
     /// Our internal representation of `minute`.
     /// Initially `nil` awaiting for fulfillment from network request or fallback value from error.
-    private var _minute: UInt8? = nil
+    private var _minute: UInt8
 
     /// The location of the astronomical event.
     private let _location: GeographicLocation
     
     public var hour: UInt8 {
         get {
-            if self._hour == nil {
-                
-            }
-            
-            return self._hour!
+            return self._hour
         }
     }
     
     public var minute: UInt8 {
         get {
-            if self._minute == nil {
-                
-            }
-            
-            return self._minute!
+            return self._minute
         }
     }
     
@@ -61,12 +53,12 @@ final public class AstronomicalTime: TimeGenerator {
     public init(of phase: AstronomicalPhase, at location: GeographicLocation, for date: String = "today") {
         self._location = location
         
+        let tempTime = phase.fallback()
+        self._hour = tempTime.hour
+        self._minute = tempTime.minute
+        
         DispatchQueue.main.async {
             guard let time = AstronomicalTime.fetchTime(of: phase, at: location, for: date) else {
-                let time = phase.fallback()
-                self._hour = time.hour
-                self._minute = time.minute
-                
                 return
             }
             self._hour = time.hour
