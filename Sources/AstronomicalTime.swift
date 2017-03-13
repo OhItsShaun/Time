@@ -1,22 +1,35 @@
 //
 //  AstronomicalTimeGenerator.swift
-//  House
 //
 //  Created by Shaun Merchant on 12/03/2017.
 //  Copyright © 2017 Shaun Merchant. All rights reserved.
 //
 
 import Foundation
+import syncDataTask
 #if os(Linux)
     import Dispatch
 #endif
 
-public class AstronomicalTime: TimeGenerator {
+/// Retrieve the time of an astronomical phase.
+///
+/// - Important: `AstronomicalTime` requires an active internet connection for HTTP requests and 
+///              determines the value of time asynchronously. Therefore when the initialiser returns
+///              the value of time has yet to be determined. Requesting `hour` or `minute` before the 
+///              the value of time has been determined will result in pause of execution until the value 
+///              has been determined or a timeout occurs (5 seconds); whichever event is sooner. In 
+///              the event time cannot be determined or timeout occurs the fallback value will be used.
+final public class AstronomicalTime: TimeGenerator {
     
+    /// Our internal representation of `hour`.
+    /// Initially `nil` awaiting for fulfillment from network request or fallback value from error.
     private var _hour: UInt8? = nil
     
+    /// Our internal representation of `minute`.
+    /// Initially `nil` awaiting for fulfillment from network request or fallback value from error.
     private var _minute: UInt8? = nil
 
+    /// The location of the astronomical event.
     private let _location: GeographicLocation
     
     public var hour: UInt8 {
@@ -39,11 +52,17 @@ public class AstronomicalTime: TimeGenerator {
         }
     }
     
-    public init(of phase: AstronomicalPhase, at location: GeographicLocation, for relativeDay: RelativeDay = .today) {
+    /// Create a new time generator for an astronomical phase.
+    ///
+    /// - Parameters:
+    ///   - phase: The astronomical phase to determine the time of.
+    ///   - location: The location of the astronomical phase in the world.
+    ///   - day: The date of the astronomical phase.
+    public init(of phase: AstronomicalPhase, at location: GeographicLocation, for date: String = "today") {
         self._location = location
         
         DispatchQueue.main.async {
-            guard let time = AstronomicalTime.fetchTime(of: phase, at: location, for: relativeDay.rawValue) else {
+            guard let time = AstronomicalTime.fetchTime(of: phase, at: location, for: date) else {
                 let time = phase.fallback()
                 self._hour = time.hour
                 self._minute = time.minute
@@ -66,20 +85,14 @@ public class AstronomicalTime: TimeGenerator {
         /// Retrieve a fallback value of time in the case that the actual value of the astronomical phase cannot be resolved.
         ///
         /// - Returns: The fallback value of time.
-        public func fallback() -> Time {
+        public func fallback() -> (hour: UInt8, minute: UInt8) {
             switch self {
             case .sunset:
-                return Time(hour: 18, minute: 00)!
+                return (hour: 18, minute: 00)
             case .sunrise:
-                return Time(hour: 7, minute: 00)!
+                return (hour: 7, minute: 00)
             }
         }
-    }
-    
-    public enum RelativeDay: String {
-        case today = "today"
-        case yesterday = "yesterday"
-        case tomorrow = "tomorrow"
     }
     
 }
@@ -94,7 +107,7 @@ extension AstronomicalTime {
     ///   - phase: The phase to determine the time of occurance.
     ///   - date: The date of the phase event.
     /// - Returns: The time of the phase event if it could be determined, otherwise nil.
-    fileprivate static func fetchTime(of phase: AstronomicalPhase, at location: GeographicLocation, for date: String) -> Time? {
+    fileprivate static func fetchTime(of phase: AstronomicalPhase, at location: GeographicLocation, for date: String) -> (hour: UInt8, minute: UInt8)? {
         guard let response = AstronomicalTime.retrieveAstronomy(for: date, at: location) else {
             return nil
         }
@@ -121,13 +134,19 @@ extension AstronomicalTime {
     ///
     /// - Parameter date: The date to retrive astronomical information for.
     /// - Returns: The return array of astronomical information, nil otherwise.
-    fileprivate static func retrieveAstronomy(for date: String, at location: GeographicLocation) -> [String: Any]? {
+    private static func retrieveAstronomy(for date: String, at location: GeographicLocation) -> [String: Any]? {
         guard let url = URL(string: "http://api.sunrise-sunset.org/json?date=" + date + "&lat=" + location.latitude + "&lng=" + location.longitude) else {
             return nil
         }
-        guard let (_, data) = URLSession.shared.syncHTTPRequest(with: URLRequest(url: url)) else {
+        
+        let (_, data): (URLResponse?, Data?)
+        do {
+            (_, data) = try URLSession.shared.syncDataTask(with: URLRequest(url: url))
+        }
+        catch {
             return nil
         }
+        
         guard let responseData = data else {
             return nil
         }
@@ -157,7 +176,7 @@ extension AstronomicalTime {
     ///
     /// - Parameter string: The string to parse.
     /// - Returns: The hour and minute value of the time.
-    fileprivate static func parse(_ string: String) -> Time? {
+    private static func parse(_ string: String) -> (hour: UInt8, minute: UInt8)? {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd h:mm:ss a"
         dateFormatter.timeZone = TimeZone(abbreviation: "UTC")!
@@ -169,8 +188,8 @@ extension AstronomicalTime {
         
         let hour = Calendar.current.component(.hour, from: date)
         let minute = Calendar.current.component(.minute, from: date)
-        
-        return Time(hour: UInt8(min(hour, 23)), minute: UInt8(min(minute, 59)))
+    
+        return (hour: UInt8(min(hour, 23)), minute: UInt8(min(minute, 59)))
     }
     
 }
