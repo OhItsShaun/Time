@@ -1,4 +1,5 @@
-# ⌚️ Time 
+# ⌚️ Time [![Build Status](https://travis-ci.org/OhItsShaun/Time.svg?branch=master)](https://travis-ci.org/OhItsShaun/Time)
+
 A Swift package to represent time by hour and minute, with an API to retrieve the time of astronomical phases (such as sunset and sunrise) from 3rd party service.
 
 ## Simple Time  
