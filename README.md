@@ -16,7 +16,7 @@ let earlierTime = time - Time(hour: 0, minute: 5) 	// 13:25
 ## Time Generators
 More complex and dynamic constructs of time can be made from conforming to the `TimeGenerator` protocol. When a value of time is created from a `TimeGenerator`, `Time` will act "lazily" and only evalute the properties defined in `TimeGenerator` when the type `Time` itself is evaluated. This enables conformants of `TimeGenerator` to perform background tasks or change dynamically whilst still contained in the same value of time.
 
-## Astronomical Phases
+## Astronomical Phases
 `AstronomicalTime` conforms to `TimeGenerator` and utilises the lazy-like evaluation, allowing astronomical phases such as sunrise and sunset to be loaded in the background whilst the program continues execution.
 
 ````Swift
