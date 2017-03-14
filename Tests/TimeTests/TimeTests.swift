@@ -56,13 +56,26 @@ class TimeTests: XCTestCase {
         XCTAssert(time5 - time5 - time5 == Time(hour: 23, minute: 55), "Evaluated: \(time5 - time5 - time5)")
     }
     
-    func testSunset() {
+    func testAstronomicalTime() {
         let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513")
         let sunset = AstronomicalTime(of: .sunset, at: location, for: "2017-02-15")
-        let time = Time(from: sunset)
-        RunLoop.current.run(until: Date().addingTimeInterval(1))
         
-        XCTAssert(acceptableTolerance(time, expecting: Time(hour: 17, minute: 21)))
+        let time1 = Date().timeIntervalSince1970
+        
+        let sunsetTime = Time(from: sunset)
+        
+        let time2 = Date().timeIntervalSince1970
+        
+        XCTAssert(abs(time1 - time2) < 0.05, "Instancing `sunsetTime` took too long. Potential bug with lazy-like evaluation.")
+        
+        // Once this line is executed it should wait until the server responds with the time, or a timeout.
+        XCTAssert(acceptableTolerance(sunsetTime, expecting: Time(hour: 17, minute: 21)), "Failed. If certain there is no bug check network connection or XCTest multithreading.")
+        
+        let sunrise = AstronomicalTime(of: .sunrise, at: location, for: "2017-02-15")
+        let sunriseTime = Time(from: sunrise)
+        
+        XCTAssert(acceptableTolerance(sunriseTime, expecting: Time(hour: 07, minute: 21)), "Failed. If certain there is no bug check network connection or XCTest multithreading.")
+
     }
 
     func acceptableTolerance(_ time: Time, expecting: Time) -> Bool {
@@ -78,7 +91,7 @@ class TimeTests: XCTestCase {
             ("testEquality", testEquality),
             ("testComparable", testComparable),
             ("testArithmetic", testArithmetic),
-            ("testSunset", testSunset),
+            ("testAstronomicalTime", testAstronomicalTime),
         ]
     }
 }

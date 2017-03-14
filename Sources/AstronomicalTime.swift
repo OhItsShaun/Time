@@ -29,17 +29,35 @@ final public class AstronomicalTime: TimeGenerator {
     /// Initially `nil` awaiting for fulfillment from network request or fallback value from error.
     private var _minute: UInt8
 
+    /// Whether our background task is complete.
+    private var _complete: Bool
+    
     /// The location of the astronomical event.
     private let _location: GeographicLocation
     
+    /// Semaphore to delay premature return of hour and minute before the 3rd party has returned 
+    /// the result. If timeout of 5 seconds, it will default to fallback values.
+    private let _semaphore = DispatchSemaphore(value: 0)
+    
+    /// Background thread.
+    private let _dispatch = DispatchQueue(label: "AstronomicalTime", qos: .utility)
+    
     public var hour: UInt8 {
         get {
+            if !self._complete {
+                let _ = self._semaphore.wait(timeout: DispatchTime.now() + .seconds(3))
+            }
+            
             return self._hour
         }
     }
     
     public var minute: UInt8 {
         get {
+            if !self._complete {
+                let _ = self._semaphore.wait(timeout: DispatchTime.now() + .seconds(3))
+            }
+            
             return self._minute
         }
     }
@@ -56,13 +74,18 @@ final public class AstronomicalTime: TimeGenerator {
         let tempTime = phase.fallback()
         self._hour = tempTime.hour
         self._minute = tempTime.minute
+        self._complete = false
         
-        DispatchQueue.main.async {
+        self._dispatch.async {
             guard let time = AstronomicalTime.fetchTime(of: phase, at: location, for: date) else {
                 return
             }
+            
             self._hour = time.hour
             self._minute = time.minute
+            self._complete = true
+            
+            self._semaphore.signal()
         }
     }
     
