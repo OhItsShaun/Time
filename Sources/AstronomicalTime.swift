@@ -33,7 +33,7 @@ final public class AstronomicalTime: TimeGenerator {
     private var _complete: Bool
     
     /// The location of the astronomical event.
-    private let _location: GeographicLocation
+    fileprivate let _location: GeographicLocation
     
     /// Semaphore to delay premature return of hour and minute before the 3rd party has returned 
     /// the result. If timeout of 5 seconds, it will default to fallback values.
@@ -77,7 +77,7 @@ final public class AstronomicalTime: TimeGenerator {
         self._complete = false
         
         self._dispatch.async {
-            guard let time = AstronomicalTime.fetchTime(of: phase, at: location, for: date) else {
+            guard let time = self.fetchTime(of: phase, at: location, for: date) else {
                 return
             }
             
@@ -122,7 +122,7 @@ extension AstronomicalTime {
     ///   - phase: The phase to determine the time of occurance.
     ///   - date: The date of the phase event.
     /// - Returns: The time of the phase event if it could be determined, otherwise nil.
-    fileprivate static func fetchTime(of phase: AstronomicalPhase, at location: GeographicLocation, for date: String) -> (hour: UInt8, minute: UInt8)? {
+    fileprivate func fetchTime(of phase: AstronomicalPhase, at location: GeographicLocation, for date: String) -> (hour: UInt8, minute: UInt8)? {
         guard let response = AstronomicalTime.retrieveAstronomy(for: date, at: location) else {
             return nil
         }
@@ -133,13 +133,13 @@ extension AstronomicalTime {
                 return nil
             }
             
-            return AstronomicalTime.parse(date + " " + sunriseTime)
+            return self.parse(date + " " + sunriseTime)
         case .sunset:
             guard let sunsetTime = response["sunset"] as? String else {
                 return nil
             }
             
-            return AstronomicalTime.parse(date + " " + sunsetTime)
+            return self.parse(date + " " + sunsetTime)
         }
     }
     
@@ -191,10 +191,13 @@ extension AstronomicalTime {
     ///
     /// - Parameter string: The string to parse.
     /// - Returns: The hour and minute value of the time.
-    private static func parse(_ string: String) -> (hour: UInt8, minute: UInt8)? {
+    private func parse(_ string: String) -> (hour: UInt8, minute: UInt8)? {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd h:mm:ss a"
-        dateFormatter.timeZone = TimeZone(abbreviation: "UTC")!
+        
+        if let timezone = self._location.timezone {
+            dateFormatter.timeZone = timezone
+        }
         
         // Automagically takes care of TimeZone and Daylight Savings for us. Nice.
         guard let date = dateFormatter.date(from: string) else {

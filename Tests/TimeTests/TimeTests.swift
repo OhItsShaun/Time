@@ -3,7 +3,7 @@ import XCTest
 
 class TimeTests: XCTestCase {
     
-    
+
     func testStaticTime() {
         let time = Time(hour: 10, minute: 3)
         XCTAssert(time.hour == 10 && time.minute == 3)
@@ -79,7 +79,7 @@ class TimeTests: XCTestCase {
     }
 
     func testDaylightSavingsTime() {
-        let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513")
+        let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513", timezone: TimeZone(abbreviation: "UTC")!)
         let sunset1 = AstronomicalTime(of: .sunset, at: location, for: "2016-10-29")
         let sunset2 = AstronomicalTime(of: .sunset, at: location, for: "2016-10-30")
         
