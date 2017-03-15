@@ -78,11 +78,45 @@ class TimeTests: XCTestCase {
 
     }
 
+    func testDaylightSavingsTime() {
+        let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513")
+        let sunset1 = AstronomicalTime(of: .sunset, at: location, for: "2016-10-29")
+        let sunset2 = AstronomicalTime(of: .sunset, at: location, for: "2016-10-30")
+        
+        let time1 = Time(from: sunset1)
+        let time2 = Time(from: sunset2)
+        
+        XCTAssert(acceptableTolerance(time1, expecting: Time(hour: 17, minute: 44)))
+        XCTAssert(acceptableTolerance(time2, expecting: Time(hour: 16, minute: 42)))
+    }
+    
+    func testBetween() {
+        let time1 = Time(hour: 5, minute: 00)
+        let time2 = Time(hour: 10, minute: 00)
+        let time3 = Time(hour: 15, minute: 00)
+        
+        XCTAssert(time2.isBetween(time1, time3))
+        XCTAssert(!time3.isBetween(time2, time1))
+    }
+    
+    func testWrappedBetween() {
+        let time1 = Time(hour: 23, minute: 55)
+        let time2 = Time(hour: 23, minute: 59)
+        let time3 = Time(hour: 00, minute: 00)
+        let time4 = Time(hour: 00, minute: 05)
+        
+        XCTAssert(time2.isWrappedBetween(time1, time3))
+        XCTAssert(time2.isWrappedBetween(time1, time4))
+        XCTAssert(time3.isWrappedBetween(time1, time4))
+        XCTAssert(!time2.isWrappedBetween(time3, time4))
+        XCTAssert(time2.isWrappedBetween(time4, time3))
+    }
+    
     func acceptableTolerance(_ time: Time, expecting: Time) -> Bool {
         let upperbound = expecting + Time(hour: 0, minute: 5)
         let lowerbound = expecting - Time(hour: 0, minute: 5)
         
-        return time >= lowerbound && time <= upperbound
+        return time.isBetween(lowerbound, upperbound)
     }
 
     static var allTests : [(String, (TimeTests) -> () throws -> Void)] {
@@ -92,6 +126,9 @@ class TimeTests: XCTestCase {
             ("testComparable", testComparable),
             ("testArithmetic", testArithmetic),
             ("testAstronomicalTime", testAstronomicalTime),
+            ("testDaylightSavingsTime", testDaylightSavingsTime),
+            ("testBetween", testBetween),
+            ("testWrappedBetween", testWrappedBetween),
         ]
     }
 }
