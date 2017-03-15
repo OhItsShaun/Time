@@ -86,8 +86,8 @@ class TimeTests: XCTestCase {
         let time1 = Time(from: sunset1)
         let time2 = Time(from: sunset2)
         
-        XCTAssert(acceptableTolerance(time1, expecting: Time(hour: 17, minute: 44)))
-        XCTAssert(acceptableTolerance(time2, expecting: Time(hour: 16, minute: 42)))
+        XCTAssert(acceptableTolerance(time1, expecting: Time(hour: 17, minute: 44)), "Expecting: 17:44 ± 00:05, Recieved: \(time1)")
+        XCTAssert(acceptableTolerance(time2, expecting: Time(hour: 16, minute: 42)), "Expecting: 16:42 ± 00:05, Recieved: \(time1)")
     }
     
     func testBetween() {
