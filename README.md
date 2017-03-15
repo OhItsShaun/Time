@@ -1,4 +1,5 @@
-# ⌚️ Time 
+# ⌚️ Time [![Build Status](https://travis-ci.org/OhItsShaun/Time.svg?branch=master)](https://travis-ci.org/OhItsShaun/Time)
+
 A Swift package to represent time by hour and minute, with an API to retrieve the time of astronomical phases (such as sunset and sunrise) from 3rd party service.
 
 ## Simple Time  
@@ -17,7 +18,7 @@ let earlierTime = time - Time(hour: 0, minute: 5) 	// 13:25
 More complex and dynamic constructs of time can be made from conforming to the `TimeGenerator` protocol. When a value of time is created from a `TimeGenerator`, `Time` will act "lazily" and only evalute the properties defined in `TimeGenerator` when the type `Time` itself is evaluated. This enables conformants of `TimeGenerator` to perform background tasks or change dynamically whilst still contained in the same value of time.
 
 
-## Astronomical Phases
+## Astronomical Phases
 `AstronomicalTime` conforms to `TimeGenerator` and utilises the lazy-like evaluation, allowing astronomical phases such as sunrise and sunset to be loaded in the background whilst the program continues execution.
 
 ````Swift
