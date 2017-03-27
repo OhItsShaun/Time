@@ -2,7 +2,6 @@ import XCTest
 @testable import Time
 
 class TimeTests: XCTestCase {
-    
 
     func testStaticTime() {
         let time = Time(hour: 10, minute: 3)
@@ -73,7 +72,6 @@ class TimeTests: XCTestCase {
         let sunrise = Time.Astronomic(of: .sunrise, at: location, for: .date("2017-02-15"))
         
         XCTAssert(acceptableTolerance(sunrise, expecting: Time(hour: 07, minute: 21)), "Failed. If certain there is no bug check network connection or XCTest multithreading.")
-
     }
     
     func testAstronomicalTimeCache() {
@@ -97,19 +95,6 @@ class TimeTests: XCTestCase {
         
         XCTAssert(time1 == time2)
         XCTAssert(difference1 > difference2)
-    }
-    
-
-    func testDaylightSavingsTime() {
-        let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513", timezone: TimeZone(abbreviation: "UTC")!)
-        let sunset1 = Time.Astronomic(of: .sunset, at: location, for: .date("2016-10-29"))
-        let sunset2 = Time.Astronomic(of: .sunset, at: location, for: .date("2016-10-30"))
-        
-        let time1 = Time(from: sunset1)
-        let time2 = Time(from: sunset2)
-        
-        XCTAssert(acceptableTolerance(time1, expecting: Time(hour: 17, minute: 44)), "Expecting: 17:44 ± 00:05, Recieved: \(time1)")
-        XCTAssert(acceptableTolerance(time2, expecting: Time(hour: 16, minute: 42)), "Expecting: 16:42 ± 00:05, Recieved: \(time1)")
     }
     
     func testBetween() {
@@ -142,7 +127,7 @@ class TimeTests: XCTestCase {
         let chainedOffset = Time.Offset(addingOffset, minus: Time(hour: 1, minute: 30))
         XCTAssert(Time(from: chainedOffset) == Time(hour: 9, minute: 15))
         
-        let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513", timezone: TimeZone(abbreviation: "UTC")!)
+        let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513")
         
         let sunset = Time.Astronomic(of: .sunset, at: location, for: .today)
         let offset = Time.Offset(sunset, minus: sunset)
@@ -165,7 +150,6 @@ class TimeTests: XCTestCase {
             ("testArithmetic", testArithmetic),
             ("testAstronomicalTime", testAstronomicalTime),
             ("testAstronomicalTimeCache", testAstronomicalTimeCache),
-            ("testDaylightSavingsTime", testDaylightSavingsTime),
             ("testBetween", testBetween),
             ("testOffset", testOffset),
             ("testWrappedBetween", testWrappedBetween),
