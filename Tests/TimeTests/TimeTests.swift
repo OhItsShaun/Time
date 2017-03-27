@@ -58,7 +58,7 @@ class TimeTests: XCTestCase {
     
     func testAstronomicalTime() {
         let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513")
-        let sunset = AstronomicalTime(of: .sunset, at: location, for: "2017-02-15")
+        let sunset = AstronomicalTime(of: .sunset, at: location, for: .date("2017-02-15"))
         
         let time1 = Date().timeIntervalSince1970
         
@@ -71,17 +71,41 @@ class TimeTests: XCTestCase {
         // Once this line is executed it should wait until the server responds with the time, or a timeout.
         XCTAssert(acceptableTolerance(sunsetTime, expecting: Time(hour: 17, minute: 21)), "Failed. If certain there is no bug check network connection or XCTest multithreading.")
         
-        let sunrise = AstronomicalTime(of: .sunrise, at: location, for: "2017-02-15")
+        let sunrise = AstronomicalTime(of: .sunrise, at: location, for: .date("2017-02-15"))
         let sunriseTime = Time(from: sunrise)
         
         XCTAssert(acceptableTolerance(sunriseTime, expecting: Time(hour: 07, minute: 21)), "Failed. If certain there is no bug check network connection or XCTest multithreading.")
 
     }
+    
+    func testAstronomicalTimeCache() {
+        /// Run once to fire up the cache
+        let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513")
+        
+        let startTime1 = Date().timeIntervalSince1970
+        let sunset1 = AstronomicalTime(of: .sunset, at: location, for: .date("2014-02-15"))
+        let time1 = Time(hour: sunset1.hour, minute: sunset1.minute)
+        let stopTime1 = Date().timeIntervalSince1970
+        
+        let difference1 = stopTime1 - startTime1
+        
+        
+        let startTime2 = Date().timeIntervalSince1970
+        let sunset2 = AstronomicalTime(of: .sunset, at: location, for: .date("2014-02-15"))
+        let time2 = Time(hour: sunset2.hour, minute: sunset2.minute)
+        let stopTime2 = Date().timeIntervalSince1970
+        
+        let difference2 = stopTime2 - startTime2
+        
+        XCTAssert(time1 == time2)
+        XCTAssert(difference1 > difference2)
+    }
+    
 
     func testDaylightSavingsTime() {
         let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513", timezone: TimeZone(abbreviation: "UTC")!)
-        let sunset1 = AstronomicalTime(of: .sunset, at: location, for: "2016-10-29")
-        let sunset2 = AstronomicalTime(of: .sunset, at: location, for: "2016-10-30")
+        let sunset1 = AstronomicalTime(of: .sunset, at: location, for: .date("2016-10-29"))
+        let sunset2 = AstronomicalTime(of: .sunset, at: location, for: .date("2016-10-30"))
         
         let time1 = Time(from: sunset1)
         let time2 = Time(from: sunset2)
@@ -126,6 +150,7 @@ class TimeTests: XCTestCase {
             ("testComparable", testComparable),
             ("testArithmetic", testArithmetic),
             ("testAstronomicalTime", testAstronomicalTime),
+            ("testAstronomicalTimeCache", testAstronomicalTimeCache),
             ("testDaylightSavingsTime", testDaylightSavingsTime),
             ("testBetween", testBetween),
             ("testWrappedBetween", testWrappedBetween),

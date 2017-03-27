@@ -1,8 +1,8 @@
 //
 //  GeographicLocation.swift
+//  Time
 //
 //  Created by Shaun Merchant on 12/03/2017.
-//  Copyright © 2017 Shaun Merchant. All rights reserved.
 //
 
 import Foundation
@@ -25,7 +25,7 @@ public struct GeographicLocation {
     ///   - latitude: The latitude of the location.
     ///   - longitude: The longitude of the location.
     ///   - timezone: The timezone to handle time in the location.
-    init(latitude: String, longitude: String, timezone: TimeZone? = nil) {
+    public init(latitude: String, longitude: String, timezone: TimeZone? = nil) {
         self.latitude = latitude
         self.longitude = longitude
         self.timezone = timezone

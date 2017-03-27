@@ -1,8 +1,8 @@
 //
 //  AstronomicalTimeGenerator.swift
+//  Time
 //
 //  Created by Shaun Merchant on 12/03/2017.
-//  Copyright © 2017 Shaun Merchant. All rights reserved.
 //
 
 import Foundation
@@ -13,80 +13,85 @@ import syncDataTask
 
 /// Retrieve the time of an astronomical phase.
 ///
-/// - Important: `AstronomicalTime` requires an active internet connection for HTTP requests and 
+/// - Important: `AstronomicalTime` requires an active internet connection for HTTP requests and
 ///              determines the value of time asynchronously. Therefore when the initialiser returns
-///              the value of time has yet to be determined. Requesting `hour` or `minute` before the 
-///              the value of time has been determined will result in pause of execution until the value 
-///              has been determined or a timeout occurs (5 seconds); whichever event is sooner. In 
+///              the value of time has yet to be determined. Requesting `hour` or `minute` before the
+///              the value of time has been determined will result in pause of execution until the value
+///              has been determined or a timeout occurs (5 seconds); whichever event is sooner. In
 ///              the event time cannot be determined or timeout occurs the fallback value will be used.
-final public class AstronomicalTime: TimeGenerator {
+public struct AstronomicalTime: TimeRepresentable {
     
-    /// Our internal representation of `hour`.
-    /// Initially `nil` awaiting for fulfillment from network request or fallback value from error.
-    private var _hour: UInt8
+    /// A cache of known sunset and sunrises.
+    /// Should contain the previous few days of sunset and sunrise and the next week of sunset and sunrise.
+    fileprivate static var _cache = [Date: [AstronomicalPhase: (UInt8, UInt8)]]()
     
-    /// Our internal representation of `minute`.
-    /// Initially `nil` awaiting for fulfillment from network request or fallback value from error.
-    private var _minute: UInt8
-
-    /// Whether our background task is complete.
-    private var _complete: Bool
+    /// Background thread.
+    fileprivate static let _dispatch = DispatchQueue(label: "AstronomicalTime", qos: .utility, attributes: .concurrent)
+    
+    /// The phase we're trying to determine.
+    fileprivate let _phase: AstronomicalPhase
     
     /// The location of the astronomical event.
     fileprivate let _location: GeographicLocation
     
-    /// Semaphore to delay premature return of hour and minute before the 3rd party has returned 
-    /// the result. If timeout of 5 seconds, it will default to fallback values.
-    private let _semaphore = DispatchSemaphore(value: 0)
+    /// The relative date requested.
+    fileprivate let _date: AstronomicalTime.RelativeDate
     
-    /// Background thread.
-    private let _dispatch = DispatchQueue(label: "AstronomicalTime", qos: .utility)
+    /// Semaphore to delay premature return of hour and minute before the 3rd party has returned
+    /// the result. If timeout of 5 seconds, it will default to fallback values.
+    fileprivate let _semaphore = DispatchSemaphore(value: 0)
     
     public var hour: UInt8 {
         get {
-            if !self._complete {
-                let _ = self._semaphore.wait(timeout: DispatchTime.now() + .seconds(3))
+            if let time = self.retrieveTimeFromCache() {
+                return time.hour
             }
             
-            return self._hour
+            self.dispatchRequest()
+            
+            let _ = self._semaphore.wait(timeout: DispatchTime.now() + .seconds(3))
+
+            if let time = self.retrieveTimeFromCache() {
+                return time.hour
+            }
+            else {
+                return self._phase.fallback().hour
+            }
         }
     }
     
     public var minute: UInt8 {
         get {
-            if !self._complete {
-                let _ = self._semaphore.wait(timeout: DispatchTime.now() + .seconds(3))
+            if let time = self.retrieveTimeFromCache() {
+                return time.minute
             }
             
-            return self._minute
+            self.dispatchRequest()
+            
+            let _ = self._semaphore.wait(timeout: DispatchTime.now() + .seconds(3))
+            
+            if let time = self.retrieveTimeFromCache() {
+                return time.minute
+            }
+            else {
+                return self._phase.fallback().minute
+            }
         }
     }
     
     /// Create a new time generator for an astronomical phase.
     ///
+    /// - Important: `date` **must** be in the format of `"yyyy-MM-dd"`.
+    ///
     /// - Parameters:
     ///   - phase: The astronomical phase to determine the time of.
     ///   - location: The location of the astronomical phase in the world.
     ///   - day: The date of the astronomical phase.
-    public init(of phase: AstronomicalPhase, at location: GeographicLocation, for date: String = "today") {
+    public init(of phase: AstronomicalPhase, at location: GeographicLocation, for date: AstronomicalTime.RelativeDate = .today) {
         self._location = location
-        
-        let tempTime = phase.fallback()
-        self._hour = tempTime.hour
-        self._minute = tempTime.minute
-        self._complete = false
-        
-        self._dispatch.async {
-            guard let time = self.fetchTime(of: phase, at: location, for: date) else {
-                return
-            }
-            
-            self._hour = time.hour
-            self._minute = time.minute
-            self._complete = true
-            
-            self._semaphore.signal()
-        }
+        self._phase = phase
+        self._date = date
+        self.dispatchRequest()
     }
     
     /// Astronomincal events in time.
@@ -110,9 +115,95 @@ final public class AstronomicalTime: TimeGenerator {
         }
     }
     
+    /// A representation of date.
+    public enum RelativeDate: CustomStringConvertible {
+        
+        /// The date for yesterday.
+        case yesterday
+        
+        /// The date for today.
+        case today
+        
+        /// The date for tomorrow.
+        case tomorrow
+        
+        /// Offset the date by a number of days.
+        case offset(days: Int)
+        
+        /// The date value of a formatted string.
+        /// - Important: The date must be in the format of `"yyyy-MM-dd"` otherwise runtime error will occur, and unexpected termination is likely.
+        case date(_: String)
+        
+        public var date: Date {
+            get {
+                let startOfDay = Date.startOfDay
+                switch self {
+                case .yesterday:
+                    return startOfDay.addingTimeInterval(-TimeInterval.secondsInDay)
+                case .today:
+                    return startOfDay
+                case .tomorrow:
+                    return startOfDay.addingTimeInterval(TimeInterval.secondsInDay)
+                case .offset(let days):
+                    return startOfDay.addingTimeInterval(TimeInterval.secondsInDay * Double(days))
+                case .date(let formatted):
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd"
+                    return dateFormatter.date(from: formatted)!
+                }
+            }
+        }
+        
+        public var description: String {
+            get {
+                let date = self.date
+                
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd"
+                
+                return dateFormatter.string(from: date)
+            }
+        }
+    }
+    
 }
 
 extension AstronomicalTime {
+    
+    fileprivate func dispatchRequest() {
+        AstronomicalTime._dispatch.async {
+            guard let time = self.fetchTime(of: self._phase, at: self._location, for: self._date.description) else {
+                return
+            }
+            
+            if AstronomicalTime._cache[self._date.date] == nil {
+                AstronomicalTime._cache[self._date.date] = [AstronomicalPhase: (UInt8, UInt8)]()
+            }
+            AstronomicalTime._cache[self._date.date]![self._phase] = (time.hour, time.minute)
+            
+            self._semaphore.signal()
+            
+            guard AstronomicalTime._cache.count > 14 else {
+                return
+            }
+            
+            let filtered = AstronomicalTime._cache.filter { (key, _) -> Bool in
+                return key > Date.startOfDay
+            }
+            AstronomicalTime._cache.removeAll()
+            for (key, value) in filtered {
+                AstronomicalTime._cache[key] = value
+            }
+        }
+    }
+    
+    fileprivate func retrieveTimeFromCache() -> Time? {
+        if let phasesTimes = AstronomicalTime._cache[self._date.date], let time = phasesTimes[self._phase] {
+            return Time(hour: time.0, minute: time.1)
+        }
+        
+        return nil
+    }
     
     /// Fetch the time an astronomical phase occurs.
     ///
@@ -206,8 +297,28 @@ extension AstronomicalTime {
         
         let hour = Calendar.current.component(.hour, from: date)
         let minute = Calendar.current.component(.minute, from: date)
-    
+        
         return (hour: UInt8(min(hour, 23)), minute: UInt8(min(minute, 59)))
+    }
+    
+}
+
+fileprivate extension Date {
+    
+    fileprivate static var startOfDay: Date {
+        get {
+            return Calendar.current.startOfDay(for: Date())
+        }
+    }
+    
+}
+
+fileprivate extension TimeInterval {
+    
+    fileprivate static var secondsInDay: TimeInterval {
+        get {
+            return TimeInterval(86400)
+        }
     }
     
 }
