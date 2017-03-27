@@ -1,9 +1,9 @@
 # ⌚️ Time [![Build Status](https://travis-ci.org/OhItsShaun/Time.svg?branch=master)](https://travis-ci.org/OhItsShaun/Time)
 
-A Swift package to represent time by hour and minute, with an API to retrieve the time of astronomical phases (such as sunset and sunrise) from 3rd party service. 
+A Swift package to represent time by hour and minute with an API to retrieve the time of astronomical phases (such as sunset and sunrise) from 3rd party service. 
 
 ## Simple Time  
-A value of `Time` represents time by its hour and minute; `Time(hour: 13, minute: 30)`.
+A value of `Time` represents time by its hour and minute, `Time(hour: 13, minute: 30)`.
 
 `Time` supports basic arithmetic operations:
 
@@ -15,6 +15,7 @@ let earlierTime = time - Time(hour: 0, minute: 5) 	// 13:25
 
 ## Astronomic Time
 An API for determining the time of sunset and sunrise at a location is provided. To retrieve the sunset for today:
+
 ````Swift
 let location = GeographicLocation(latitude: "52.450817", longitude: "-1.930513") // provide your own location
 let sunset = Time.Astronomic(of: .sunset, at: location)
@@ -29,6 +30,7 @@ If `.today`, `.yesterday` or `.tomorrow` is supplied as an argument when initial
 
 ## Offset Time 
 `TimeRepresentable` can be offset. For example, to retrieve sunset minus 45 minutes:
+
 ````Swift 
 let earlierSunset = Time.Offset(sunset, minus: Time(hour: 0, minute: 45))
 ````
