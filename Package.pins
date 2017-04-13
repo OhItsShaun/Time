@@ -1,0 +1,12 @@
+{
+  "autoPin": true,
+  "pins": [
+    {
+      "package": "syncDataTask",
+      "reason": null,
+      "repositoryURL": "https://github.com/OhItsShaun/syncDataTask",
+      "version": "0.1.2"
+    }
+  ],
+  "version": 1
+}

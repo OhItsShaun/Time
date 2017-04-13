@@ -142,16 +142,16 @@ public extension Time {
             
             public var date: Date {
                 get {
-                    let startOfDay = Date.startOfDay
+                    let dateOfStartOfDay = Date.dateOfStartOfDay
                     switch self {
                     case .yesterday:
-                        return startOfDay.addingTimeInterval(-TimeInterval.secondsInDay)
+                        return dateOfStartOfDay.addingTimeInterval(-TimeInterval.secondsInDay)
                     case .today:
-                        return startOfDay
+                        return dateOfStartOfDay
                     case .tomorrow:
-                        return startOfDay.addingTimeInterval(TimeInterval.secondsInDay)
+                        return dateOfStartOfDay.addingTimeInterval(TimeInterval.secondsInDay)
                     case .offset(let days):
-                        return startOfDay.addingTimeInterval(TimeInterval.secondsInDay * Double(days))
+                        return dateOfStartOfDay.addingTimeInterval(TimeInterval.secondsInDay * Double(days))
                     case .date(let formatted):
                         let dateFormatter = DateFormatter()
                         dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -194,7 +194,7 @@ extension Time.Astronomic {
             }
             
             let filtered = Time.Astronomic._cache.filter { (key, _) -> Bool in
-                return key > Date.startOfDay
+                return key > Date.dateOfStartOfDay
             }
             Time.Astronomic._cache.removeAll()
             for (key, value) in filtered {
@@ -312,7 +312,7 @@ extension Time.Astronomic {
 fileprivate extension Date {
     
     /// The `Date` value that represents the start of the current day.
-    fileprivate static var startOfDay: Date {
+    fileprivate static var dateOfStartOfDay: Date {
         get {
             return Calendar.current.startOfDay(for: Date())
         }
